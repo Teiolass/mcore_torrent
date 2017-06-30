@@ -16,11 +16,11 @@ class Torrent():
 		self.meta_info_dict = bdecode(self.torrent_file)
 		self.announce = self.meta_info_dict[b'announce'].decode('utf-8')
 		self.info_dict = self.meta_info_dict[b'info']
-		self.bencoded_info_dict = self.info_dict['ben_string']
+		bencoded_info_dict = self.info_dict['ben_string']
 		self.filename = self.info_dict[b'name'].decode('utf-8')
 		self.path = 'torrents_in_progress'
-		self.info_hash = sha1(self.bencoded_info_dict).digest()
-		self.peer_id = '-'.join(['','TZ', '0000', str(randrange(10000000000,99999999999))])
+		self.info_hash = sha1(bencoded_info_dict).digest()
+		self.peer_id = '-'.join(['','TE', '0000', str(randrange(10000000000,99999999999))])
 		self.ip = self.get_IP_address()
 		self.port =  '6881' #TODO: Try ports in range (6881,6889)
 		self.length = int(self.info_dict[b'length']) if b'length' in self.info_dict \
@@ -35,11 +35,23 @@ class Torrent():
 		self.complete = False #TODO: Update when self.pieces_needed is empty
 		self.pieces_needed = []
 
+	@property
+	def left(self):
+		return int(self.length) - self.downloaded
+
 	def get_IP_address(self):
 		response = get('http://api.ipify.org?format=json')
 		ip_object = loads(response.text)
 		return ip_object["ip"]
 
-t = Torrent('deb/ubuntu.torrent')
-print(t.announce)
-print(t.filename)
+	def get_params(self):
+		return {
+		'info_hash': self.info_hash,
+		'event': 'started',
+		'downloaded': self.downloaded,
+		'uploaded' : self.uploaded,
+		'peer_id': self.peer_id,
+		'port': self.port,
+		'left': self.left,
+		'compact': '0',
+		}
