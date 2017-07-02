@@ -7,4 +7,5 @@ class Manager:
         self.torrent_downloader = Torrent_Downloader(self.torrent)
 
 m = Manager('deb/ubuntu.torrent')
-print(m.torrent_downloader.peers)
+for pp in m.torrent_downloader.peers:
+    print('{}\t{}'.format(pp.IP, pp.port))

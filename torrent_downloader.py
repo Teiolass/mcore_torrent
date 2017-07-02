@@ -1,4 +1,5 @@
 from tracker import Tracker
+from peer import Peer
 
 
 class Torrent_Downloader:

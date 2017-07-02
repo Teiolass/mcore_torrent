@@ -51,5 +51,4 @@ class Tracker():
 				ip = '.'.join(str(i) for i in peer[:4])
 				port = int.from_bytes(peer[4:], byteorder='big')
 				peer_list.append((ip, port))
-		print('peer_list', peer_list)
 		return peer_list
