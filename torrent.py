@@ -55,3 +55,17 @@ class Torrent():
 		'left': self.left,
 		'compact': '0',
 		}
+
+	def update_pieces_needed(self):
+		'''	Search self.have for pieces not yet recieved and add them to list.
+			If all pieces are accounted for, stop the io_loop and change self.complete
+			to True
+		'''
+		self.pieces_needed = []
+		for index, value in enumerate(self.have):
+			if not value:
+				self.pieces_needed.append(index)
+		if not self.pieces_needed:
+			self.complete = True
+			self.io_loop.stop()
+			print("DONE!!!!!")
