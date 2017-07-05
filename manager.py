@@ -18,9 +18,12 @@ class Manager:
     @coroutine
     def connect_peers(self):
         for peer in self.torrent_downloader.peers:
+            if '91.189' in peer.IP:
+                continue
+            print('CONNECTING {}'.format(peer.IP))
             try:
-                print('CONNECTING {}'.format(peer.IP))
                 self.loop.create_task(peer.connect(self.torrent_downloader.message_handler.handshake))
             except Exception as e:
-                print_exc()
-                print('peer {} failed to connect. Exception: "{}"'.format(peer, e))
+                # print_exc()
+                # print('peer {} failed to connect. Exception: "{}"'.format(peer, type(e)))
+                pass

@@ -22,10 +22,17 @@ class Peer:
     def connect(self, message):
         self.message = message
         self.sock.setblocking(0)
-        yield from self.io_loop.sock_connect(self.sock, (self.IP, self.port))
+        try:
+            yield from self.io_loop.sock_connect(self.sock, (self.IP, self.port))
+        except:
+            print('Error while connecting to peer ', self.IP)
+            return
         yield from self.io_loop.sock_sendall(self.sock, message)
         while len(self.buffer) < 68:
-            message_bytes = yield from self.io_loop.sock_recv(self.sock, 4096)
+            try:
+                message_bytes = yield from self.io_loop.sock_recv(self.sock, 4096)
+            except:
+                print('Error while receiving data from peer ', self.IP)
             if not message_bytes:
                 raise Exception("Socket closed unexpectedly while receiving hanshake")
             self.buffer += message_bytes

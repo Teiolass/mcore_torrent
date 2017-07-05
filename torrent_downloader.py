@@ -28,9 +28,18 @@ class Torrent_Downloader:
         '''
         self.torrent.update_pieces_needed()
         for i in self.torrent.pieces_needed:
-            if peer.has_pieces[i]:
+            if peer.has_pieces[i]:  # created in bitfield function in message_handler
                 self.io_loop.create_task(self.message_handler.send_message(peer=peer, message_id=2))
                 self.choose_piece(peer=peer)
                 break
             else:
                 self.peers.remove(peer)
+
+    def choose_piece(self, peer):
+        '''	Finds the next needed piece, updates self.have and self.pieces_needed.
+            calls construct_request_payload.
+        '''
+        piece_index = self.torrent.pieces_needed[0]
+        self.torrent.have[piece_index] = True
+        self.torrent.update_pieces_needed()
+        self.message_handler.construct_request_payload(peer=peer, piece_index=piece_index, piece_length=self.torrent.piece_length)

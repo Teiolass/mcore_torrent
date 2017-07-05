@@ -68,4 +68,4 @@ class Torrent():
 		if not self.pieces_needed:
 			self.complete = True
 			self.io_loop.stop()
-			print("DONE!!!!!")
+			print("Download finished!!!!")

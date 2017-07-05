@@ -1,3 +1,5 @@
+from asyncio import coroutine, get_event_loop
+
 class MessageHandler():
     def __init__(self, torrent, torrent_downloader):
         self.torrent = torrent
@@ -15,6 +17,7 @@ class MessageHandler():
           self.cancel,
           self.port,
         ]
+        self.io_loop = get_event_loop()
 
     def handshake(self):
         ''' construct handshake bytestring in form:
@@ -44,7 +47,7 @@ class MessageHandler():
         '''
         message_id = message_bytes[0]
         message_slice = message_bytes[1:]
-        print("Received Message: ", message_id)
+        print("Received Message from {}:\t{}".format(peer.IP, message_id))
         self.message_func_name[message_id](peer, message_slice)
 
     def choke(self, peer, message_bytes):
@@ -74,6 +77,7 @@ class MessageHandler():
         '''
         piece_index = int.from_bytes(message_bytes, byteorder='big')
         peer.has_pieces[piece_index] = True
+        self.torrent_downloader.pieces_changed_callback(peer)
 
     def bitfield(self, peer, message_bytes):
         ''' formats each byte into binary and updates peer.has_pieces list
@@ -111,3 +115,40 @@ class MessageHandler():
         ''' port: <len=0003><id=9><listen-port>
         '''
         pass
+
+    @coroutine
+    def send_message(self, peer, message_id, payload_bytes=b''):
+        ''' Send message and update self.state if necessary
+            messages in the protocol take the form of
+            <length prefix><message ID><payload>. The length prefix is a four byte
+            big-endian value. The message ID is a single decimal byte.
+            The payload is message dependent.
+        '''
+        print("Sending message to peer {}: ".format(peer.IP), message_id)
+        length_bytes = (1 + len(payload_bytes)).to_bytes(4, byteorder='big')
+        message_id_bytes = message_id.to_bytes(1, byteorder='big')
+        elements = [length_bytes, message_id_bytes, payload_bytes]
+        message_bytes = b''.join(elements)
+        yield from peer.io_loop.sock_sendall(peer.sock, message_bytes)
+        if message_id in [0,1,2,3]:
+            self.update_state(peer, message_id)
+
+    def update_state(self, peer, message_id):
+        if message_id == 0:
+            peer.state['am_choking'] = True
+        elif message_id == 1:
+            peer.state['am_choking'] = False
+        elif message_id == 2:
+            peer.state['am_interested'] = True
+        elif message_id == 3:
+            peer.state['am_interested'] = False
+
+    def construct_request_payload(self, peer, piece_index, piece_offset=0, piece_length=16384):
+        ''' Constructs the payload of a request message for piece_index.
+            Calls peer.send_message to finish construction and send.
+        '''
+        piece_index_bytes = piece_index.to_bytes(4, byteorder='big')
+        piece_begin = piece_offset.to_bytes(4, byteorder='big')
+        piece_length = piece_length.to_bytes(4, byteorder='big')
+        payload = b''.join([piece_index_bytes, piece_begin, piece_length])
+        self.io_loop.create_task(self.send_message(peer, 6, payload))
