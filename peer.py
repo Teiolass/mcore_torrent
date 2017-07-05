@@ -25,21 +25,25 @@ class Peer:
         try:
             yield from self.io_loop.sock_connect(self.sock, (self.IP, self.port))
         except:
-            print('Error while connecting to peer ', self.IP)
+            self.visualize('Error while connecting')
             return
+        self.visualize('CONNECTED')
         yield from self.io_loop.sock_sendall(self.sock, message)
+        self.visualize('handshake sent')
         while len(self.buffer) < 68:
             try:
                 message_bytes = yield from self.io_loop.sock_recv(self.sock, 4096)
             except:
-                print('Error while receiving data from peer ', self.IP)
+                self.visualize('Error while receiving data')
                 self.connected = False
                 return
             if not message_bytes:
-                print('Connection failed on peer ', self.IP)
+                self.visualize('Connection failed')
                 self.connected = False
                 return
             self.buffer += message_bytes
+            self.visualize('Received: {}'.format(self.buffer)[:50])
+        self.visualize('handshake return received')
         self.torrent_downloader.message_handler.check_handshake(self, self.buffer[:68])
 
     @coroutine
@@ -51,10 +55,10 @@ class Peer:
             try:
                 message_bytes = yield from self.io_loop.sock_recv(self.sock, 4096)
             except:
-                print('Error while listening on peer ', self.IP)
+                self.visualize('Error while listening')
                 return
             if not message_bytes:
-                print("Socket closed unexpectedly while receiving message on peer ", self.IP)
+                self.visualize("Socket closed unexpectedly while receiving message")
                 # @warning close without brackets
                 self.sock.close
                 self.connected = False
@@ -66,10 +70,12 @@ class Peer:
             bytes to dispatch_message. If length is 0000, message is "keep alive"
         '''
         while True:
+            self.visualize('LISTENING... {}'.format(len(self.buffer)))
             if len(self.buffer) >= 4:
                 message_length = int.from_bytes(self.buffer[:4], byteorder='big')
+                self.visualize('LISTENING... {}/{}'.format(len(self.buffer), message_length))    
                 if message_length == 0:
-                    print("{} - KEEP ALIVE".format(self.IP))
+                    self.visualize('message: keep alive')
                     self.buffer = self.buffer[4:]
                 elif len(self.buffer[4:]) >= message_length:
                     message = self.buffer[4:message_length+4]
@@ -79,3 +85,6 @@ class Peer:
                     return self.buffer
             else:
                 return self.buffer
+
+    def visualize(self, text):
+        self.torrent_downloader.visualizer.append_message(ip=self.IP, text=text)

@@ -38,10 +38,11 @@ class MessageHandler():
             # TODO: remove peer from torrent.peer_list and manager.connected_peers
         else:
             peer.connected = True
+            peer.visualize('Handshake completed')
             try:
                 peer.io_loop.create_task(peer.listen())
             except:
-                print('Error on listening peer ', peer.IP)
+                peer.visualize('Error while listening')
                 return
             peer.buffer = peer.buffer[68:]
 
@@ -51,7 +52,7 @@ class MessageHandler():
         '''
         message_id = message_bytes[0]
         message_slice = message_bytes[1:]
-        print("Received Message from {}:\t{}".format(peer.IP, message_id))
+        peer.visualize('received message_id {}'.format(message_id))
         self.message_func_name[message_id](peer, message_slice)
 
     def choke(self, peer, message_bytes):
@@ -89,6 +90,7 @@ class MessageHandler():
         '''
         bitstring = ''.join('{0:08b}'.format(byte) for byte in message_bytes)
         peer.has_pieces = [bool(int(c)) for c in bitstring]
+        peer.torrent_downloader.visualizer.set_check(peer.IP, 'YES')
         self.torrent_downloader.pieces_changed_callback(peer)
 
     def request(self, peer, message_bytes):
@@ -128,7 +130,7 @@ class MessageHandler():
             big-endian value. The message ID is a single decimal byte.
             The payload is message dependent.
         '''
-        print("Sending message to peer {}: ".format(peer.IP), message_id)
+        peer.visualize('sending message {}'.format(message_id))
         length_bytes = (1 + len(payload_bytes)).to_bytes(4, byteorder='big')
         message_id_bytes = message_id.to_bytes(1, byteorder='big')
         elements = [length_bytes, message_id_bytes, payload_bytes]

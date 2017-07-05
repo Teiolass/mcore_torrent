@@ -2,6 +2,8 @@ from tracker import Tracker
 from peer import Peer
 from message_handler import MessageHandler
 from asyncio import get_event_loop, coroutine
+from visualizer import Visualizer
+
 
 
 class Torrent_Downloader:
@@ -11,6 +13,7 @@ class Torrent_Downloader:
         self.peers = self.create_peers()
         self.message_handler = MessageHandler(self.torrent, self)
         self.io_loop = get_event_loop()
+        self.visualizer = Visualizer()
 
 
     def create_peers(self):

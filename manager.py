@@ -18,7 +18,5 @@ class Manager:
     @coroutine
     def connect_peers(self):
         for peer in self.torrent_downloader.peers:
-            if '91.189' in peer.IP:
-                continue
-            print('CONNECTING {}'.format(peer.IP))
+            peer.visualize('CONNECTING')
             self.loop.create_task(peer.connect(self.torrent_downloader.message_handler.handshake))
