@@ -33,8 +33,12 @@ class Peer:
                 message_bytes = yield from self.io_loop.sock_recv(self.sock, 4096)
             except:
                 print('Error while receiving data from peer ', self.IP)
+                self.connected = False
+                return
             if not message_bytes:
-                raise Exception("Socket closed unexpectedly while receiving hanshake")
+                print('Connection failed on peer ', self.IP)
+                self.connected = False
+                return
             self.buffer += message_bytes
         self.torrent_downloader.message_handler.check_handshake(self, self.buffer[:68])
 
@@ -44,9 +48,13 @@ class Peer:
         '''
         while self.connected:
             self.dispatch_messages_from_buffer()
-            message_bytes = yield from self.io_loop.sock_recv(self.sock, 4096)
+            try:
+                message_bytes = yield from self.io_loop.sock_recv(self.sock, 4096)
+            except:
+                print('Error while listening on peer ', self.IP)
+                return
             if not message_bytes:
-                raise Exception("Socket closed unexpectedly while receiving message")
+                print("Socket closed unexpectedly while receiving message on peer ", self.IP)
                 # @warning close without brackets
                 self.sock.close
                 self.connected = False

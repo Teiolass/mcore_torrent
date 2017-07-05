@@ -38,7 +38,11 @@ class MessageHandler():
             # TODO: remove peer from torrent.peer_list and manager.connected_peers
         else:
             peer.connected = True
-            peer.io_loop.create_task(peer.listen())
+            try:
+                peer.io_loop.create_task(peer.listen())
+            except:
+                print('Error on listening peer ', peer.IP)
+                return
             peer.buffer = peer.buffer[68:]
 
     def dispatch_message(self, peer, message_bytes):

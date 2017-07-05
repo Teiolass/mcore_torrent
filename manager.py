@@ -21,9 +21,4 @@ class Manager:
             if '91.189' in peer.IP:
                 continue
             print('CONNECTING {}'.format(peer.IP))
-            try:
-                self.loop.create_task(peer.connect(self.torrent_downloader.message_handler.handshake))
-            except Exception as e:
-                # print_exc()
-                # print('peer {} failed to connect. Exception: "{}"'.format(peer, type(e)))
-                pass
+            self.loop.create_task(peer.connect(self.torrent_downloader.message_handler.handshake))
